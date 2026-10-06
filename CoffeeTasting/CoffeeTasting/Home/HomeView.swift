@@ -10,8 +10,7 @@ struct HomeView: View {
     @State private var permissions = AppPermissions()
     @State private var session = TastingSession()
 
-    @State private var showHistory = false
-    @State private var showStats = false
+    @State private var showSettings = false
     @State private var refillTrigger = 0
     @State private var savedToastVisible = false
 
@@ -36,6 +35,7 @@ struct HomeView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .statusBarHidden(true)
         .confirmationDialog("Talk about this coffee?", isPresented: promptBinding, titleVisibility: .visible) {
             Button("Start talking") {
                 Task { await session.startRecording(permissions: permissions) }
@@ -56,11 +56,8 @@ struct HomeView: View {
             }
             .interactiveDismissDisabled()
         }
-        .sheet(isPresented: $showHistory) {
-            HistoryListView()
-        }
-        .sheet(isPresented: $showStats) {
-            StatsView()
+        .sheet(isPresented: $showSettings) {
+            SettingsView(permissions: permissions)
         }
         .alert("Couldn't record", isPresented: errorBinding) {
             Button("OK") { session.errorMessage = nil }
@@ -85,33 +82,12 @@ struct HomeView: View {
     @ViewBuilder
     private func controls(height: CGFloat) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack {
                 Spacer()
-                Button {
-                    showHistory = true
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                }
-                .accessibilityLabel("Tasting history")
-                Button {
-                    showStats = true
-                } label: {
-                    Image(systemName: "chart.bar.xaxis")
-                }
-                .accessibilityLabel("Stats")
+                SettingsDotButton { showSettings = true }
             }
-            .buttonStyle(GlassCircleButtonStyle())
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-
-            if permissions.cameraDenied || camera.state == .unavailable {
-                PermissionBanner(
-                    text: permissions.cameraDenied
-                        ? "Camera access is off. Enable it in Settings to see the live background."
-                        : "No camera available here, showing a plain background instead."
-                )
-                .padding(.top, 10)
-            }
+            .padding(.trailing, 6)
+            .padding(.top, 2)
 
             Spacer()
 
@@ -217,39 +193,6 @@ struct RecordingBar: View {
         .padding(.trailing, 8)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial, in: Capsule())
-    }
-}
-
-struct PermissionBanner: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle")
-            Text(text)
-                .font(.footnote)
-            Spacer(minLength: 0)
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                Link("Settings", destination: url)
-                    .font(.footnote.weight(.semibold))
-            }
-        }
-        .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal, 16)
-    }
-}
-
-struct GlassCircleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 17, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(width: 42, height: 42)
-            .background(.ultraThinMaterial, in: Circle())
-            .opacity(configuration.isPressed ? 0.6 : 1)
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

@@ -3,8 +3,8 @@ import SwiftData
 import SwiftUI
 
 /// Simple reporting: headline numbers, tastings per week, and most-used descriptors.
+/// Pushed inside the Settings navigation stack.
 struct StatsView: View {
-    @Environment(\.dismiss) private var dismiss
     @Query private var notes: [TastingNote]
 
     private var stats: TastingStats {
@@ -12,25 +12,19 @@ struct StatsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if notes.isEmpty {
-                    ContentUnavailableView(
-                        "Nothing to report yet",
-                        systemImage: "chart.bar",
-                        description: Text("Save a few tastings and your palate trends will show up here.")
-                    )
-                } else {
-                    content
-                }
-            }
-            .navigationTitle("Stats")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+        Group {
+            if notes.isEmpty {
+                ContentUnavailableView(
+                    "Nothing to report yet",
+                    systemImage: "chart.bar",
+                    description: Text("Save a few tastings and your palate trends will show up here.")
+                )
+            } else {
+                content
             }
         }
+        .navigationTitle("Stats")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var content: some View {
@@ -142,6 +136,8 @@ struct DescriptorBarRow: View {
 }
 
 #Preview {
-    StatsView()
-        .modelContainer(for: TastingNote.self, inMemory: true)
+    NavigationStack {
+        StatsView()
+    }
+    .modelContainer(for: TastingNote.self, inMemory: true)
 }

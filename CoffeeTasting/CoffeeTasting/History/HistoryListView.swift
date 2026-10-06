@@ -1,9 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// Chronological, searchable list of saved tastings.
+/// Chronological, searchable list of saved tastings. Pushed inside the Settings navigation stack.
 struct HistoryListView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TastingNote.createdAt, order: .reverse) private var notes: [TastingNote]
     @State private var searchText = ""
@@ -22,64 +21,60 @@ struct HistoryListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if notes.isEmpty {
-                    ContentUnavailableView(
-                        "No tastings yet",
-                        systemImage: "cup.and.saucer",
-                        description: Text("Tap the cup on the home screen and talk about your coffee.")
-                    )
-                } else if filtered.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
-                } else {
-                    List {
-                        ForEach(filtered) { note in
-                            NavigationLink(value: note) {
-                                NoteRow(note: note)
+        Group {
+            if notes.isEmpty {
+                ContentUnavailableView(
+                    "No tastings yet",
+                    systemImage: "cup.and.saucer",
+                    description: Text("Tap the cup on the home screen and talk about your coffee.")
+                )
+            } else if filtered.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+            } else {
+                List {
+                    ForEach(filtered) { note in
+                        NavigationLink(value: note) {
+                            NoteRow(note: note)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                modelContext.delete(note)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    modelContext.delete(note)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                note.isFavorite.toggle()
+                            } label: {
+                                Label(note.isFavorite ? "Unmark" : "Great", systemImage: note.isFavorite ? "star.slash" : "star")
                             }
-                            .swipeActions(edge: .leading) {
-                                Button {
-                                    note.isFavorite.toggle()
-                                } label: {
-                                    Label(note.isFavorite ? "Unmark" : "Great", systemImage: note.isFavorite ? "star.slash" : "star")
-                                }
-                                .tint(.yellow)
-                            }
-                            .contextMenu {
-                                ShareLink(item: note.shareText) {
-                                    Label("Share", systemImage: "square.and.arrow.up")
-                                }
+                            .tint(.yellow)
+                        }
+                        .contextMenu {
+                            ShareLink(item: note.shareText) {
+                                Label("Share", systemImage: "square.and.arrow.up")
                             }
                         }
                     }
-                    .listStyle(.plain)
                 }
+                .listStyle(.plain)
             }
-            .navigationDestination(for: TastingNote.self) { note in
-                NoteDetailView(note: note)
-            }
-            .searchable(text: $searchText, prompt: "Search notes, coffee, roaster")
-            .navigationTitle("Tastings")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        favoritesOnly.toggle()
-                    } label: {
-                        Image(systemName: favoritesOnly ? "star.fill" : "star")
-                    }
-                    .accessibilityLabel(favoritesOnly ? "Show all" : "Show great coffees only")
+        }
+        .navigationDestination(for: TastingNote.self) { note in
+            NoteDetailView(note: note)
+        }
+        .searchable(text: $searchText, prompt: "Search notes, coffee, roaster")
+        .navigationTitle("History")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    favoritesOnly.toggle()
+                } label: {
+                    Image(systemName: favoritesOnly ? "star.fill" : "star")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+                .accessibilityLabel(favoritesOnly ? "Show all" : "Show great coffees only")
             }
         }
     }
@@ -125,6 +120,8 @@ struct NoteRow: View {
 }
 
 #Preview {
-    HistoryListView()
-        .modelContainer(for: TastingNote.self, inMemory: true)
+    NavigationStack {
+        HistoryListView()
+    }
+    .modelContainer(for: TastingNote.self, inMemory: true)
 }
